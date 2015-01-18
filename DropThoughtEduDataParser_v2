@@ -1,0 +1,67 @@
+#Michael Becich
+#Parsing Script for Delimiting CSV file for DropThought Educational Data
+#1/15/2015
+#Unresolved Issues: 1) Parsing \n escape character, 2) Limit of 255 characters per Excel Cell, 3) http, 4) repeated comments
+#Extra Instructions: =SUBSTITUTE(Char(10),"") in Excel to eliminate line break; turn off text-wrap
+#Correct for accidental truncation =IF(P2<10,CONCATENATE("0000",P2),(IF(P2<100,CONCATENATE("000",P2),CONCATENATE("00",P2))))
+#----------------------------------
+
+#Import Statements
+import csv
+import sys
+import re
+
+#Read File
+ifileName='ET1.csv'
+inputfile=open(ifileName, 'r')
+edureader = csv.reader(inputfile)# delimiter=' ', quotechar='|')
+
+#Header Properties
+header=True #Boolean
+headers=["FB ID","Session","FB Channel","Date","Day of Week","Time","Rating","Email","Replied","Ind ID","Email Prefix","Email Suffix","Ins ID","Matched Codes","Feedback","Feedback Frags"]
+
+#Write File
+ofileName='ET1_O2'
+outputfile=open(ofileName,'w')
+eduwriter=csv.writer(outputfile,delimiter='\t',quoting=csv.QUOTE_ALL)
+#Planned delimiters=",",". ","!","?",":",";"," - ", " and ", " or ", " but ", " however ", " even so ", " nevertheless "
+
+#--------
+#I/O Body
+#--------
+
+#Top line of CSV Output
+eduwriter.writerow(headers) 
+#Skip First Line
+if(header):
+    next(inputfile)
+
+#Scan through each imported line of CSV
+for row in edureader:
+    #print (row[9]) #Check
+    feedback=row[9].rstrip("\n").strip("\r\n")
+    #Doesn't split if contains URL
+    if (not "http" in row[9]):
+        x=[s for s in re.split(r'[,!?:;&]+|\n|\t|\r\n|\r\n\r\n| and | or | but |\. |however|even so|nevertheless', feedback.lower()) if s]
+        #print (x) #Check
+    #truncated for MS Excel purposes--Max Cell Chars=255
+    if (len(row[9])>250):
+        feedback=feedback[0:249]
+    #Initialize Counters
+    max=len(x)
+    count=1
+    #While Loop to write output line-by-line to file
+    newRow=[row[0],row[1],row[2],row[3],row[4],row[5],row[6],row[7],row[8],row[10],row[11],row[12],row[13], row[14],row[9]];
+    while(count<=max):
+        if(len(x[count-1])>1): #As long as the string is longer than 1 character
+            newRow.append(x[count-1])
+        #print(newRow)
+        count+=1
+    eduwriter.writerow(newRow)
+    
+inputfile.close()
+outputfile.close()
+print ("Finished. Output can be found in Scripts > " + ofileName)
+
+
+
